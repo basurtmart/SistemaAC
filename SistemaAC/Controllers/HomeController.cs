@@ -19,14 +19,14 @@ namespace SistemaAC.Controllers
         [Authorize(Roles = "Administrador")]
         public IActionResult About()
         {
-            ViewData["Message"] = "Your application description page.";
+            ViewData["Message"] = "Curso de Sistemas web ASP.Net Core, MVC, Entity Framework y Ajax";
 
             return View();
         }
 
         public IActionResult Contact()
         {
-            ViewData["Message"] = "Your contact page.";
+            ViewData["Message"] = "Información del desarrollador";
 
             return View();
         }
