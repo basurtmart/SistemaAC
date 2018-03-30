@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -13,25 +14,92 @@ namespace SistemaAC.Controllers
     public class UsuariosController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private UserManager<ApplicationUser> _userManager;
+        private RoleManager<IdentityRole> _roleManager;
+        private UsuarioRole _usuarioRole;
+        public List<SelectListItem> usuarioRole;
 
-        public UsuariosController(ApplicationDbContext context)
+        public UsuariosController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             _context = context;
+            _userManager = userManager;
+            _roleManager = roleManager;
+            _usuarioRole = new UsuarioRole();
+            usuarioRole = new List<SelectListItem>();
         }
 
         // GET: Usuarios
         public async Task<IActionResult> Index()
         {
-            return View(await _context.ApplicationUser.ToListAsync());
+            // Declaro una variable Id inicializado vacía
+            var ID = "";
+            // Declaro un objeto list que depende la clase Usuario
+            List<Usuario> usuario = new List<Usuario>();
+            // Ahora obtengo todos los registros de la tabla donde almaceno los usuarios
+            // y lo almaceno en el objeto
+            var appUsuario = await _context.ApplicationUser.ToListAsync();
+            // ahora con una estructura foreach vamos a recorrer
+            // todos los valores del objeto appUsuario
+            foreach (var Data in appUsuario)
+            {
+                ID = Data.Id;
+                usuarioRole = await _usuarioRole.GetRole(_userManager, _roleManager, ID);
+
+                usuario.Add(new Usuario()
+                {
+                    Id = Data.Id,
+                    UserName = Data.UserName,
+                    PhoneNumber = Data.PhoneNumber,
+                    Email = Data.Email,
+                    Role = usuarioRole[0].Text,
+                });
+            }
+
+            return View(usuario.ToList());
+            //return View(await _context.ApplicationUser.ToListAsync());
         }
 
 
-        public async Task<List<ApplicationUser>> GetUsuario(string id)
+        public async Task<List<Usuario>> GetUsuario(string id)
         {
-            List<ApplicationUser> usuario = new List<ApplicationUser>();
+            // Declaro un objeto list que depende la clase Usuario
+            List<Usuario> usuario = new List<Usuario>();
             var appUsuario = await _context.ApplicationUser.SingleOrDefaultAsync(m => m.Id == id);
-            usuario.Add(appUsuario);
+            usuarioRole = await _usuarioRole.GetRole(_userManager, _roleManager, id);
+
+            usuario.Add(new Usuario()
+            {
+                Id = appUsuario.Id,
+                UserName = appUsuario.UserName,
+                Email = appUsuario.Email,
+                Role = usuarioRole[0].Text,
+                RoleId = usuarioRole[0].Value,
+                PhoneNumber = appUsuario.PhoneNumber,
+                EmailConfirmed = appUsuario.EmailConfirmed,
+                LockoutEnabled = appUsuario.LockoutEnabled,
+                LockoutEnd = appUsuario.LockoutEnd,
+                NormalizedEmail = appUsuario.NormalizedEmail,
+                NormalizedUserName = appUsuario.NormalizedUserName,
+                PasswordHash = appUsuario.PasswordHash,
+                PhoneNumberConfirmed = appUsuario.PhoneNumberConfirmed,
+                SecurityStamp = appUsuario.SecurityStamp,
+                TwoFactorEnabled = appUsuario.TwoFactorEnabled,
+                AccessFailedCount = appUsuario.AccessFailedCount,
+                ConcurrencyStamp = appUsuario.ConcurrencyStamp
+            });
+
             return usuario;
+        }
+
+        public async Task<List<SelectListItem>> GetRoles()
+        {
+            // Creamos un objeto llamando rolesLista
+            List<SelectListItem> rolesLista = new List<SelectListItem>();
+
+            rolesLista = _usuarioRole.Roles(_roleManager);
+
+            return rolesLista;
+
         }
 
         public async Task<string> EditUsuario(string id, string userName, string email, 
